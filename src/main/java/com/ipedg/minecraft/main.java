@@ -19,15 +19,18 @@ import java.util.Map;
 import java.util.logging.Level;
 
 public class main extends Plugin implements Listener {
-    private List<ModData> modDataList = new ArrayList<>();
-    private Boolean OpenSystem = false;
-    private Boolean Debug = false;
-    private String PlayerMsg;
+    public static List<ModData> modDataList = new ArrayList<>();
+    public static String DebungName = "";
+    public static Boolean Debug = false;
+    public static String PlayerMsg;
+    public static Plugin plugin;
+
 
 
 
     @Override
     public void onEnable() {
+        plugin = this;
         try
         {
             File dataFolder = getDataFolder();
@@ -35,11 +38,12 @@ public class main extends Plugin implements Listener {
             if (!dataFolder.exists())
             {
                 dataFolder.mkdir();
-                Files.copy(getResourceAsStream("config.yml"), file.toPath(), new CopyOption[0]);
+                Files.copy(getResourceAsStream("config.yml"), file.toPath());
             }
             Configuration config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
             loadConfig(config);
             this.getProxy().getPluginManager().registerListener(this,this);
+            this.getProxy().getPluginManager().registerCommand(this, new command("gml"));
         }
         catch (IOException e)
         {
@@ -51,15 +55,19 @@ public class main extends Plugin implements Listener {
 
     public void loadConfig(Configuration config){
         //saveConfig();
+        DebungName = config.getString("DebungName");
+        Debug = config.getBoolean("Debug");
+        PlayerMsg = config.getString("Msg");
+        if (Debug){
+            return;
+        }
         List<String> main = config.getStringList("ModList");
         for (String tmp:main){
             String[] split = tmp.split("\\|");
             System.out.print(split[0]+"|"+split[1]);
             modDataList.add(new ModData(split[0],split[1]));
         }
-        OpenSystem = config.getBoolean("OpenSystem");
-        Debug = config.getBoolean("Debug");
-        PlayerMsg = config.getString("Msg");
+
     }
 
     @EventHandler
@@ -72,15 +80,14 @@ public class main extends Plugin implements Listener {
 //        EntityPlayerMP handle = player.getHandle();
 //        List<ModData> playerMods = getPlayerMods(handle);
         for (ModData mod:data){
-            if (Debug){
-                System.out.print(mod.getName()+"|"+mod.getVersion());
-            }
-            if (OpenSystem){
+            if (Debug&&event.getPlayer().getName().equalsIgnoreCase(DebungName)){
+                getLogger().info("DebugModList:"+mod.getName()+"|"+mod.getVersion());
+                return;
+            }else {
                 if (!modDataList.contains(mod)){
                     event.getPlayer().disconnect(new TextComponent(PlayerMsg));
                 }
             }
-
         }
     }
 }
